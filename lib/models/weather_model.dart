@@ -7,14 +7,14 @@ class WeatherModel {
   DateTime date;
   double temp;
   double maxtemp;
-  double mintemp;
+  double minTemp;
   String weatherStatus;
 
   WeatherModel(
       {required this.date,
       required this.temp,
       required this.maxtemp,
-      required this.mintemp,
+      required this.minTemp,
       required this.weatherStatus});
 // The purpose from this constructor is to build an object from the internet data(json)
 
@@ -31,7 +31,7 @@ class WeatherModel {
       date: input,
       temp: jsonData['day']['avgtemp_c'],
       maxtemp: jsonData['day']['maxtemp_c'],
-      mintemp: jsonData['day']['mintemp_c'],
+      minTemp: jsonData['day']['mintemp_c'],
       weatherStatus: jsonData['day']['condition']['text'],
     );
   }

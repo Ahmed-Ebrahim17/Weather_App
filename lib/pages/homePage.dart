@@ -1,114 +1,142 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:weather/models/weather_model.dart';
-import 'package:weather/pages/search_screen.dart';
-import 'package:weather/providers/weather_provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:weather/components/page_route.dart';
+import 'package:weather/cubits/weather_cubit/weather_cubit.dart';
+import 'package:weather/cubits/weather_cubit/weather_state.dart';
 
-class Homepage extends StatefulWidget {
-  const Homepage({super.key});
+import '../models/weather_model.dart';
 
-  @override
-  State<Homepage> createState() => _HomepageState();
-}
-
-class _HomepageState extends State<Homepage> {
-  void UpdateUi() {
-    setState(() {});
-  }
-
+class HomePage extends StatelessWidget {
+  HomePage({super.key});
   WeatherModel? weatherData;
   @override
   Widget build(BuildContext context) {
-    weatherData = Provider.of<WeatherProvider>(context).weatherData;
     return Scaffold(
       appBar: AppBar(
         actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.settings)),
           IconButton(
               onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) {
-                  return SearchPage(
-                    UpdateUI: UpdateUi,
-                  );
-                }));
+                Navigator.push(
+                  context,
+                  CreateRoute(),
+                );
               },
               icon: const Icon(Icons.search)),
         ],
         title: const Text("Flutter Weather"),
       ),
-      body: weatherData == null
-          ? const Center(
-              child: Column(
-                  mainAxisSize: MainAxisSize
-                      .min, // كدا ال كولم واخد الهايت بتاع الشلدرين .
-                  children: [
-                    Text(
-                      "Please select a location ",
-                      style:
-                          TextStyle(fontFamily: 'GrandifloraOne', fontSize: 18),
-                    ),
-                  ]),
-            )
-          : Container(
-              decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                colors: [
-                  weatherData!.getThemeColor(),
-                  weatherData!.getThemeColor()[300]!,
-                  weatherData!.getThemeColor()[100]!,
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              )),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+      body: BlocBuilder<WeatherCubit, WeatherState>(
+        builder: (context, state) {
+          if (state is WeatherLoading) {
+            return const Center(
+              child: CircularProgressIndicator(
+                backgroundColor: Colors.white,
+                color: Colors.black,
+              ),
+            );
+          } else if (state is WeatherSuccess) {
+            return SuccessBody(
+              weatherData: state.weatherModel,
+            );
+          } else if (state is WeatherFailure) {
+            return const Center(
+              child: Text('Something went wrong please try again'),
+            );
+          } else {
+            return const DefaultBody();
+          }
+        },
+      ),
+    );
+  }
+}
+
+class SuccessBody extends StatelessWidget {
+  SuccessBody({
+    required this.weatherData,
+    super.key,
+  });
+  WeatherModel weatherData;
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            weatherData.getThemeColor(),
+            weatherData.getThemeColor()[300]!,
+            weatherData.getThemeColor()[100]!,
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Spacer(
+            flex: 2,
+          ),
+          Text(
+            BlocProvider.of<WeatherCubit>(context).cityName!,
+            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+          ),
+          Text(
+            'Updated at : ${weatherData.date.hour}:${weatherData.date.minute} ',
+            style: const TextStyle(
+              fontSize: 19,
+            ),
+          ),
+          const Spacer(
+            flex: 1,
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Image.asset(weatherData.getImage()),
+              const Text(
+                '',
+                style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+              ),
+              Column(
                 children: [
-                  const Spacer(
-                    flex: 2,
-                  ),
-                  Text(
-                    Provider.of<WeatherProvider>(context).cityName!,
-                    style: const TextStyle(
-                        fontSize: 32, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    'Updated at : ${weatherData!.date.hour.toString()}:${weatherData!.date.minute.toString()}',
-                    style: const TextStyle(
-                      fontSize: 19,
-                    ),
-                  ),
-                  const Spacer(
-                    flex: 1,
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      Image.asset(weatherData!.getImage()),
-                      Text(
-                        '${weatherData!.temp.toInt()}',
-                        style: const TextStyle(
-                            fontSize: 30, fontWeight: FontWeight.bold),
-                      ),
-                      Column(
-                        children: [
-                          Text('Max_Temp: ${weatherData!.maxtemp.toInt()}'),
-                          Text('Min_Temp: ${weatherData!.mintemp.toInt()}'),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const Spacer(flex: 1),
-                  Text(
-                    weatherData!.weatherStatus,
-                    style: const TextStyle(
-                        fontSize: 30, fontWeight: FontWeight.w400),
-                  ),
-                  const Spacer(
-                    flex: 6,
-                  ),
+                  Text('Max: ${weatherData.minTemp.toInt()}'),
+                  Text('Min: ${weatherData.minTemp.toInt()}'),
                 ],
               ),
+            ],
+          ),
+          const Spacer(flex: 1),
+          Text(
+            ' ${weatherData.weatherStatus}',
+            style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w400),
+          ),
+          const Spacer(
+            flex: 6,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class DefaultBody extends StatelessWidget {
+  const DefaultBody({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Column(
+          mainAxisSize:
+              MainAxisSize.min, // كدا ال كولم واخد الهايت بتاع الشلدرين .
+          children: [
+            Text(
+              "Please select a location ",
+              style: TextStyle(fontFamily: 'GrandifloraOne', fontSize: 18),
             ),
+          ]),
     );
   }
 }
